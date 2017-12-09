@@ -27,6 +27,7 @@ extern "C" {
 #define PERIOD_1S     0b00000100
 #define PERIOD_1MN    0b00001000
 #define PERIOD_5MN    0b00010000
+#define PERIOD_30MN   0b01000000
 #define PERIOD_CUSTOM 0b10000000
 
 
@@ -36,6 +37,7 @@ extern "C" {
 #define MOD_1S (uint32_t)(1000/timerFrequence)
 #define MOD_1MN (uint32_t)((60*1000)/timerFrequence)
 #define MOD_5MN (uint32_t)((5*60*1000)/timerFrequence)
+#define MOD_30MN (uint32_t)((30*60*1000)/timerFrequence)
 
 
 
@@ -48,20 +50,22 @@ class MyTimer : public BaseManager
     //static void  timerCallback(void *pArg);
 
     boolean isQuickPeriod() {return period&PERIOD_QUICK;}
-    boolean is25MSPeriod() {return period&PERIOD_25MS;}
+    boolean is25MSPeriod()  {return period&PERIOD_25MS;}
     boolean is250MSPeriod() {return period&PERIOD_250MS;}
-    boolean is1SPeriod() {return period&PERIOD_1S;}
-    boolean is1MNPeriod() {return period&PERIOD_1MN;}
-    boolean is5MNPeriod() {return period&PERIOD_5MN;}
-    boolean isCustomPeriod() {return period&PERIOD_CUSTOM;}
+    boolean is1SPeriod()    {return period&PERIOD_1S;}
+    boolean is1MNPeriod()   {return period&PERIOD_1MN;}
+    boolean is5MNPeriod()   {return period&PERIOD_5MN;}
+    boolean is30MNPeriod()  {return period&PERIOD_30MN;}
+    boolean isCustomPeriod(){return period&PERIOD_CUSTOM;}
 
 
-    boolean isQuickFrequence() {return frequence&PERIOD_QUICK;}
-    boolean is25MSFrequence() {return frequence&PERIOD_25MS;}
-    boolean is250MSFrequence() {return frequence&PERIOD_250MS;}
-    boolean is1SFrequence() {return frequence&PERIOD_1S;}
-    boolean is1MNFrequence() {return frequence&PERIOD_1MN;}
-    boolean is5MNFrequence() {return frequence&PERIOD_5MN;}
+    boolean isQuickFrequence()  {return frequence&PERIOD_QUICK;}
+    boolean is25MSFrequence()   {return frequence&PERIOD_25MS;}
+    boolean is250MSFrequence()  {return frequence&PERIOD_250MS;}
+    boolean is1SFrequence()     {return frequence&PERIOD_1S;}
+    boolean is1MNFrequence()    {return frequence&PERIOD_1MN;}
+    boolean is5MNFrequence()    {return frequence&PERIOD_5MN;}
+    boolean is30MNFrequence()   {return frequence&PERIOD_30MN;}
     boolean isCustomFrequence() {return frequence&PERIOD_CUSTOM;}
 
     void setCustomMS(uint32_t customMS) {MOD_custom = customMS/timerFrequence;};

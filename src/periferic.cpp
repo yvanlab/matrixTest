@@ -84,31 +84,35 @@ String Periferic::getBlock(String jSon, String key) {
 
 void Periferic::retrievePeriphericInfo() {
   String block;
-  String result = collectJson(CURRENT_IP_PROD);
+
+  m_currentJson = collectJson(CURRENT_IP_PROD);
 
   status_current = STATUS_PERIPHERIC_WORKING;
-  if (result.length() == 0) {
+  if (m_currentJson.length() == 0) {
+    m_currentJson = "{\"current-status\":\"failed\"}";
     status_current = STATUS_PERIPHERIC_DOWN;
   } else {
-    block = getBlock(result,"courant");
+    block = getBlock(m_currentJson,"courant");
     instant_current       = getValue(block,"current").toFloat();
     kwh_current           = getValue(block,"lastKWT").toFloat();
     instant_kwh_current   = getValue(block,"KWH").toFloat();
     //lastMesureDate_current = getValue(block,"KWH");
   }
 
-  result = collectJson(VMC_METEO_IP_PROD);
+  m_meteoVMCJson = collectJson(VMC_METEO_IP_PROD);
   status_meteoVmc = STATUS_PERIPHERIC_WORKING;
-  if (result.length() == 0) {
+  if (m_meteoVMCJson.length() == 0) {
     status_meteoVmc = STATUS_PERIPHERIC_DOWN;
+    m_meteoVMCJson = "{\"vmc-meteo-status\":\"failed\"}";
   } else {
-    block = getBlock(result,"VMC");
+    block = getBlock(m_meteoVMCJson,"VMC");
     vtsVMC_meteoVmc     = getValue(block,"Vitesse").toInt(); //00,50,100
     tempVMC_meteoVmc    =  getValue(block,"dhtTemp").toFloat();
 
-    block = getBlock(result,"EXT");
+    block = getBlock(m_meteoVMCJson,"EXT");
     extTemp_meteoVmc    = getValue(block,"bmpTemp").toFloat();
-    trendMeteo_meteoVmc = getValue(block,"bmpPress").toInt();
+    trendMeteo_meteoVmc = getValue(block,"bmpWeatherForcast").toInt();
+    //trendMeteo_meteoVmc
     //lastMesureDate__meteoVmc = getValue(result,"KWH");
   }
 }

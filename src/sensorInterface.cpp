@@ -36,11 +36,15 @@ uint16_t SensorInterface::readSensor(uint32_t timeout){
   //DEBUGLOG(detection);
   //DEBUGLOG(detection);
   //previous_page--;
-  if (detection != 0) personDetectedTime = millis();
+  //if (detection != 0) personDetectedTime = millis();
   return detection;
 }
 
 boolean SensorInterface::isPagechangeDetected() {
+  if (bForcePgeChangeDetected) {
+    bForcePgeChangeDetected = false;
+    return true;
+  }
   if (isPersonDetected()) {
     //setTimeout(TIMEOUT_DETECTION_CLOSE);
     uint16_t distance = readSensor(TIMEOUT_DETECTION_CLOSE);
@@ -49,13 +53,22 @@ boolean SensorInterface::isPagechangeDetected() {
 }
 
 boolean SensorInterface::isPersonDetected() {
-  if ((millis() - personDetectedTime) < MAX_DURATION_ACTIVE)
+  if ((personDetectedTime > 0 ) && ((millis() - personDetectedTime) < MAX_DURATION_ACTIVE) )
     return true;
   //setTimeout(TIMEOUT_DETECTION_FAR);
+  pinMode(A0,INPUT_PULLDOWN_16);
+  digitalWrite(A0,LOW);
   uint16_t distance = analogRead(A0);//readSensor(TIMEOUT_DETECTION_FAR);
+  //DEBUGLOGF("%d : Analog Read %d\n",nbDetected,distance);
   if (distance>500) {
-    personDetectedTime = millis();
-    return true;
+    nbDetected++;
+    if (nbDetected==20) {
+      nbDetected = 0;
+      personDetectedTime =   millis();
+      return true;
+    }
+  } else {
+    nbDetected = 0;
   }
   personDetectedTime = 0;
   return false;
@@ -64,7 +77,7 @@ boolean SensorInterface::isPersonDetected() {
 
 boolean SensorInterface::isCfgDetected() {
   if (isPersonDetected() ) {
-    if (millis() - cfgDetectedTime < MAX_DURATION_CFG  ) return true;
+    if ((cfgDetectedTime>0) && (millis() - cfgDetectedTime < MAX_DURATION_CFG  ) ) return true;
     //setTimeout(TIMEOUT_DETECTION_CLOSE);
     uint16_t distance = readSensor(TIMEOUT_DETECTION_CLOSE);
     if (distance>2 && distance<5) {

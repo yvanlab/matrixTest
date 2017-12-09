@@ -22,6 +22,8 @@ class Periferic : public BaseManager
     String collectJson(String ipAddress);
     void retrievePeriphericInfo();
 
+    String getMeteoVMCJson() {return  m_meteoVMCJson;};
+    String getcurrentJson()  {return  m_currentJson;};
     String getClassName(){return "Periferic";}
 
     // current
@@ -39,6 +41,8 @@ class Periferic : public BaseManager
     float tempVMC_meteoVmc;
     String lastMesureDate__meteoVmc;
 
+    String m_meteoVMCJson;
+    String m_currentJson;
 
   private:
     String getBlock(String jSon, String key);

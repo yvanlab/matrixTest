@@ -32,6 +32,8 @@ void MatrixPages::displayPage(){
     displayVMCPage();
   } else if (page == CFG_PAGE) {
     displayCfgPage();
+  } if (page == HOUR_PAGE) {
+    displayHourPage();
   } else if (page == STOP_PAGE) {
     displayStopPage();
   }
@@ -49,7 +51,7 @@ void  MatrixPages::setPage(uint8 num) {
 void MatrixPages::nextPage() {
   if (startTransition != 0 /*|| page == CFG_PAGE*/) return;
   //DEBUGLOGF("NPage %d",page);
-  uint8_t newpage = (page+1) % 4;
+  uint8_t newpage = (page+1) % 5;
   setPage(newpage);
 }
 
@@ -75,15 +77,34 @@ boolean MatrixPages::manageTransition(byte transitionType) {
 
 void MatrixPages::displayMessagePage(){
   if (manageTransition(FROM_CENTER) || mtTimer.is1SPeriod()) {
-     matrix.drawText(0,0,hrManager.toDTString(STD_TEXT).c_str(),font4_6, PC_BRIGHT);
+     matrix.drawText(0,0,wfManager.getHourManager()->toDTString(STD_TEXT).c_str(),font4_6, PC_BRIGHT);
+     String stemp = String(periferic->extTemp_meteoVmc,1) + "d-" + String (periferic->instant_current/1000,1) + "a";
+     matrix.drawText(84,0,stemp.c_str(),font4_6, PC_BRIGHT);
+
    }
  if (mtTimer.is25MSPeriod()) {
+   /*char buffer[50];
+   strcpy_P(buffer, (char*)pgm_read_word(&(weatherString[periferic->trendMeteo_meteoVmc])));
+   //strcpy(buffer, (char*)pgm_read_word(&(weatherString[periferic->trendMeteo_meteoVmc])));*/
+
+   String weather =  String(periferic->extTemp_meteoVmc,1) + "C - "+ FPSTR (weatherString[periferic->trendMeteo_meteoVmc]);
+   //DEBUGLOGF("weather : %s\n",weather.c_str());
+   String messageToDisplay = String(smManager.m_textToDisplay) + " - " + weather;
+   //DEBUGLOGF("messageToDisplay : %s\n",messageToDisplay.c_str());
    xDecalage--;
-   if (xDecalage < (-8*(int)strlen(smManager.m_textToDisplay)))
+   if (xDecalage < (-8*(int)messageToDisplay.length()))
       xDecalage = 128;
-   matrix.drawText(xDecalage,6,smManager.m_textToDisplay,font8_8, PC_BRIGHT);
+   matrix.drawText(xDecalage,6,messageToDisplay.c_str(),font8_8, PC_BRIGHT);
  }
 }
+
+
+void MatrixPages::displayHourPage(){
+  if (manageTransition(FROM_RIGHT) || mtTimer.is1SPeriod()) {
+     matrix.drawText(0,0,wfManager.getHourManager()->toDTString(STD_TEXT).c_str(),font8_16, PC_BRIGHT);
+  }
+}
+
 // ************************************************
 // ** Current : xxKxh
 // ** xxA  xxKwh

@@ -28,6 +28,7 @@ void  timerCallback(void *pArg) {
      if ((mtTimer.periodCPT % MOD_1S) == 0)      {mtTimer.period |= PERIOD_1S   ;mtTimer.frequence ^= PERIOD_1S;}
      if ((mtTimer.periodCPT % MOD_1MN) == 0)     {mtTimer.period |= PERIOD_1MN  ;mtTimer.frequence ^= PERIOD_1MN;}
      if ((mtTimer.periodCPT % MOD_5MN) == 0)     {mtTimer.period |= PERIOD_5MN  ;mtTimer.frequence ^= PERIOD_5MN;}
+     if ((mtTimer.periodCPT % MOD_30MN) == 0)    {mtTimer.period |= PERIOD_30MN ;mtTimer.frequence ^= PERIOD_30MN;}
      if ((mtTimer.periodCPT % mtTimer.MOD_custom) == 0)  {mtTimer.period |= PERIOD_CUSTOM;mtTimer.frequence ^= PERIOD_CUSTOM;}
      matrix.displayScreen();
 } // End of timerCallback

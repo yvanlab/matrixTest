@@ -24,11 +24,12 @@
 
 
 #define MESSAGE_PAGE 0
-#define CURRENT_PAGE 1
-#define VMC_PAGE     2
-#define METEO_PAGE   3
-#define STOP_PAGE    4
-#define CFG_PAGE     5
+#define HOUR_PAGE    1
+#define CURRENT_PAGE 2
+#define VMC_PAGE     3
+#define METEO_PAGE   4
+#define STOP_PAGE    5
+#define CFG_PAGE     6
 
 
 
@@ -47,6 +48,7 @@ class MatrixPages : public BaseManager
     void displayMeteoPage();
     void displayCfgPage();
     void displayStopPage();
+    void displayHourPage();
     String getClassName(){return "MatrixPages";}
 
     uint8_t page = 0;
