@@ -85,7 +85,7 @@ String Periferic::getBlock(String jSon, String key) {
 void Periferic::retrievePeriphericInfo() {
   String block;
 
-  m_currentJson = collectJson(CURRENT_IP_PROD);
+  m_currentJson = "";//collectJson(CURRENT_IP_PROD);
 
   status_current = STATUS_PERIPHERIC_WORKING;
   if (m_currentJson.length() == 0) {

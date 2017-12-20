@@ -303,7 +303,7 @@ void loop ( void ) {
 if (mtTimer.is1MNPeriod()){
   boolean nowDetection = siInterface.isPersonDetected();
 
-  if ((!previousPresence && nowDetection) || (previousPresence && !nowDetection) ) {
+  if (((!previousPresence && nowDetection) || (previousPresence && !nowDetection)) || mtTimer.is30MNPeriod()  ) {
     sfManager.addVariable(PRESENCE_LABEL, String (nowDetection));
     DEBUGLOG(sfManager.toString(STD_TEXT));
     int res = sfManager.sendIoT( smManager.m_privateKey, smManager.m_publicKey);
