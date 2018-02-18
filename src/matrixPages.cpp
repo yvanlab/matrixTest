@@ -78,7 +78,7 @@ boolean MatrixPages::manageTransition(byte transitionType) {
 void MatrixPages::displayMessagePage(){
   if (manageTransition(FROM_CENTER) || mtTimer.is1SPeriod()) {
      matrix.drawText(0,0,wfManager.getHourManager()->toDTString(STD_TEXT).c_str(),font4_6, PC_BRIGHT);
-     String stemp = String(periferic->extTemp_meteoVmc,1) + "d-" + String (periferic->instant_current/1000,1) + "a";
+     String stemp = periferic->getExtTemp() + "d-" + periferic->getInstantCurrent1() + "A";
      matrix.drawText(84,0,stemp.c_str(),font4_6, PC_BRIGHT);
 
    }
@@ -87,7 +87,10 @@ void MatrixPages::displayMessagePage(){
    strcpy_P(buffer, (char*)pgm_read_word(&(weatherString[periferic->trendMeteo_meteoVmc])));
    //strcpy(buffer, (char*)pgm_read_word(&(weatherString[periferic->trendMeteo_meteoVmc])));*/
 
-   String weather =  String(periferic->extTemp_meteoVmc,1) + "C - "+ FPSTR (weatherString[periferic->trendMeteo_meteoVmc]);
+   String weather =  periferic->getExtTemp() +
+      "C, Max " + periferic->getExtTempMax() +
+      "C, Min " + periferic->getExtTempMin() +
+      " - " +   FPSTR (weatherString[periferic->getTrendMeteo()]);
    //DEBUGLOGF("weather : %s\n",weather.c_str());
    String messageToDisplay = String(smManager.m_textToDisplay) + " - " + weather;
    //DEBUGLOGF("messageToDisplay : %s\n",messageToDisplay.c_str());
@@ -101,7 +104,10 @@ void MatrixPages::displayMessagePage(){
 
 void MatrixPages::displayHourPage(){
   if (manageTransition(FROM_RIGHT) || mtTimer.is1SPeriod()) {
-     matrix.drawText(0,0,wfManager.getHourManager()->toDTString(STD_TEXT).c_str(),font8_16, PC_BRIGHT);
+     //matrix.drawText(0,0,wfManager.getHourManager()->toDTString(STD_TEXT).c_str(),font8_16, PC_BRIGHT);
+     matrix.drawText(0,0,NTP.getTimeStr().c_str(),font8_16, PC_BRIGHT);
+     matrix.drawText(84,2,NTP.getDateStr().c_str(),font4_6, PC_BRIGHT);
+     //matrix.drawText(65,8,periferic->getDaySaintName().c_str(),font4_6, PC_BRIGHT|PA_BLINK_250MS);
   }
 }
 
@@ -112,27 +118,27 @@ void MatrixPages::displayHourPage(){
 
 void MatrixPages::displayCurrentPage(){
   if (manageTransition(FROM_LEFT) || mtTimer.is1MNPeriod()) {
-    String ss = "Current " + String (periferic->kwh_current,1) + "Kwh" ;
+    String ss = "Current " + periferic->getKWH1() + "Kwh" ;
     matrix.drawText(0,0,ss.c_str(),font4_6, PC_BRIGHT);
-    ss = String (periferic->instant_current/1000,1) + "A" + String (periferic->instant_kwh_current,1)+"Kwh" ;
+    ss = periferic->getInstantCurrent1() + "A-" + periferic->getDifferential()+"mA" ;
     matrix.drawText(0,8,ss.c_str(), font8_8, PC_BRIGHT);
   }
 }
 
 void MatrixPages::displayVMCPage(){
   if (manageTransition(FROM_LEFT) || mtTimer.is1MNPeriod()) {
-    String ss = "VMC " + String(periferic->vtsVMC_meteoVmc);
+    String ss = "VMC " + periferic->getVMVvts();
     matrix.drawText(0,0,ss.c_str(),font4_6, PC_BRIGHT);
-    ss = String(periferic->tempVMC_meteoVmc,1) + "deg";
+    ss = periferic->getVMCtemp() + "C";
     matrix.drawText(0,8,ss.c_str(), font8_8, PC_BRIGHT);
   }
 }
 
 void MatrixPages::displayMeteoPage(){
   if (manageTransition(FROM_RIGHT) || mtTimer.is1MNPeriod()) {
-    String ss = "METEO " + String(periferic->trendMeteo_meteoVmc);
+    String ss = "METEO " + String(periferic->getTrendMeteo())+"-"+FPSTR (weatherString[periferic->getTrendMeteo()]);
     matrix.drawText(0,0,ss.c_str(),font4_6, PC_BRIGHT);
-    ss = String(periferic->extTemp_meteoVmc,1) + "deg";
+    ss = periferic->getExtTemp() + "C,"+periferic->getExtTempMax() + "C," + periferic->getExtTempMin() + "C";
     matrix.drawText(0,6,ss.c_str(),font8_8, PC_BRIGHT);
   }
 }

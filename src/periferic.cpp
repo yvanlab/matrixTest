@@ -16,21 +16,25 @@ Periferic::Periferic(unsigned char pinLed) : BaseManager(pinLed){
 
 }
 
-String Periferic::collectJson(String ipAddress) {
-    if (!WiFi.isConnected()) return "";
-    HTTPClient http;  //Declare an object of class HTTPClient
-    DEBUGLOG("http://"+ipAddress+"/status");  //Specify request destination
-    http.begin("http://"+ipAddress+"/status");  //Specify request destination
-    String result;
-    int httpCode = http.GET();                                                                  //Send the request
 
-    if (httpCode > 0) { //Check the returning code
-      result = http.getString();   //Get the request response payload
-    }
-    http.end();   //Close connection
-    //DEBUGLOG(httpCode);DEBUGLOG(result);
-    return result;
+
+String Periferic::collectJson(String urlService) {
+  if (!WiFi.isConnected()) return "";
+  HTTPClient http;  //Declare an object of class HTTPClient
+  DEBUGLOG(urlService);  //Specify request destination
+  http.begin(urlService);  //Specify request destination
+  String result;
+  int httpCode = http.GET();                                                                  //Send the request
+
+  if (httpCode > 0) { //Check the returning code
+    result = http.getString();   //Get the request response payload
+  }
+  http.end();   //Close connection
+  //DEBUGLOG(httpCode);DEBUGLOG(result);
+  return result;
 }
+
+
 /*
 {
   "module": {
@@ -53,6 +57,7 @@ String Periferic::collectJson(String ipAddress) {
 }
 */
 String Periferic::getValue(String jSon, String key) {
+  DEBUGLOG("Json:"+jSon + "  key:"+key);
   int16_t fromIndex = jSon.indexOf(key);
   //DEBUGLOGF("First index %d",fromIndex);
   if (fromIndex < 0) return "";
@@ -66,53 +71,123 @@ String Periferic::getValue(String jSon, String key) {
   lastIndex = sTmp.lastIndexOf("\"");
   fromIndex = sTmp.indexOf("\"",key.length()+1);
   sTmp = sTmp.substring(fromIndex+1,lastIndex );
-  //DEBUGLOG(key+":"+sTmp);
+  DEBUGLOG(key+":"+sTmp + "  value:"+sTmp);
   return sTmp;
 }
 
 String Periferic::getBlock(String jSon, String key) {
   int16_t fromIndex = jSon.indexOf(key);
-  //DEBUGLOGF("First index %d",fromIndex);
+  DEBUGLOGF("First index %d",fromIndex);
   if (fromIndex < 0) return "";
   int16_t firstparenthesis = jSon.indexOf('{', fromIndex);
+  uint8_t nbrParenthese=0;
+  String sTmp;
+  for (int i=firstparenthesis+1;i++;i<jSon.length()) {
+    if (jSon[i] == '{') nbrParenthese++;
+    if (jSon[i] == '}') {
+      if (nbrParenthese>0)
+        nbrParenthese--;
+      else {
+        sTmp = jSon.substring(firstparenthesis, i+1);
+        DEBUGLOG(key+":"+sTmp);
+        return sTmp;
+      }
+    }
+  }
+/*
   if (firstparenthesis < 0) return "";
   int16_t lastparenthesis = jSon.indexOf('}', firstparenthesis);
   String sTmp = jSon.substring(firstparenthesis, lastparenthesis+1);
-  //DEBUGLOG(key+":"+sTmp);
+*/
+
   return sTmp;
 }
 
+String Periferic::getKeyValue(String jsonMessage, String key) {
+  int8_t i = key.indexOf('/');
+  //DEBUGLOG("Json:"+jsonMessage + "  key:"+key);
+  if (i<0)
+    return getValue(jsonMessage, key);
+  String blockKey = key.substring(0, i);
+  String nextKey = key.substring(i+1);
+  DEBUGLOG("blockKey : "+blockKey+"   nextKey:" + nextKey);
+  String block = getBlock(jsonMessage, blockKey);
+  if (block != "")
+    return getKeyValue(block, nextKey);
+  return "";
+}
+
+String Periferic::getVmcMetoValue(String key) {
+  return getKeyValue(m_meteoVMCJson, key);
+
+}
+String Periferic::getCurrentValue(String key){
+  return getKeyValue(m_currentJson, key);
+
+}
+String Periferic::getSonorerValue(String key){
+  return getKeyValue(m_snorerJson, key);
+
+}
+
+
+
+
+String Periferic::buildPerifericOutput(String perifericName, uint8_t statusCode) {
+  String tt("{\"module\":{");
+    tt += "\"nom\":\"" + perifericName +"\"," ;
+    tt += "\"status\":\"" + String(statusCode) + "\"}}";
+  return tt;
+}
+
+
 void Periferic::retrievePeriphericInfo() {
-  String block;
+  //String block;
 
-  m_currentJson = "";//collectJson(CURRENT_IP_PROD);
 
-  status_current = STATUS_PERIPHERIC_WORKING;
-  if (m_currentJson.length() == 0) {
-    m_currentJson = "{\"current-status\":\"failed\"}";
-    status_current = STATUS_PERIPHERIC_DOWN;
-  } else {
-    block = getBlock(m_currentJson,"courant");
-    instant_current       = getValue(block,"current").toFloat();
-    kwh_current           = getValue(block,"lastKWT").toFloat();
-    instant_kwh_current   = getValue(block,"KWH").toFloat();
-    //lastMesureDate_current = getValue(block,"KWH");
+  //collect saint du Jour
+/*  if (m_saintJson=="" ||
+      getKeyValue(m_saintJson,"day").toInt() != day() ||
+      getKeyValue(m_saintJson,"month").toInt() != month() ) {
+      m_saintJson = collectJson("http://fetedujour.fr/api/v2/VOTRECLE/json-normal");
+  }*/
+
+
+
+  m_snorerJson = collectJson("http://"+String(SNORER_IP_PROD)+"/status");
+  if (m_snorerJson.length() == 0) {
+    m_snorerJson = buildPerifericOutput(SNORER_NAME, STATUS_PERIPHERIC_DOWN);
   }
 
-  m_meteoVMCJson = collectJson(VMC_METEO_IP_PROD);
-  status_meteoVmc = STATUS_PERIPHERIC_WORKING;
-  if (m_meteoVMCJson.length() == 0) {
-    status_meteoVmc = STATUS_PERIPHERIC_DOWN;
-    m_meteoVMCJson = "{\"vmc-meteo-status\":\"failed\"}";
+  m_currentJson = collectJson("http://"+String(CURRENT_IP_PROD)+"/status");
+  //status_current = STATUS_PERIPHERIC_WORKING;
+  if (m_currentJson.length() == 0) {
+    //m_currentJson = "{\"current-status\":\"failed\"}";
+    m_currentJson = buildPerifericOutput(CURRENT_NAME, STATUS_PERIPHERIC_DOWN);
+    //status_current = STATUS_PERIPHERIC_DOWN;
   } else {
-    block = getBlock(m_meteoVMCJson,"VMC");
-    vtsVMC_meteoVmc     = getValue(block,"Vitesse").toInt(); //00,50,100
-    tempVMC_meteoVmc    =  getValue(block,"dhtTemp").toFloat();
+    float val1 = getKeyValue(m_currentJson,"courant1/value").toFloat();
+    m_InstantCurrent1 = String(val1/1000.0,1);
+    float val2 = getKeyValue(m_currentJson,"courant2/value").toFloat();
+    m_Differential    = String(abs((val1-val2)),0);
+    m_InstantCurrent2 = String(val2/1000.0,1);
+    m_Temperarture    = getKeyValue(m_currentJson,"temperature/value");
+    val1 = getKeyValue(m_currentJson,"courant3/value").toFloat();
+    m_InstantCurrent3 = String(val1/1000.0,1);
+    m_KWH1 = "";
+  }
 
-    block = getBlock(m_meteoVMCJson,"EXT");
-    extTemp_meteoVmc    = getValue(block,"bmpTemp").toFloat();
-    trendMeteo_meteoVmc = getValue(block,"bmpWeatherForcast").toInt();
-    //trendMeteo_meteoVmc
-    //lastMesureDate__meteoVmc = getValue(result,"KWH");
+  m_meteoVMCJson = collectJson("http://"+String(VMC_METEO_IP_PROD)+"/status");
+  //status_meteoVmc = STATUS_PERIPHERIC_WORKING;
+  if (m_meteoVMCJson.length() == 0) {
+    //status_meteoVmc = STATUS_PERIPHERIC_DOWN;
+    m_meteoVMCJson = buildPerifericOutput(VMC_METEO_NAME, STATUS_PERIPHERIC_DOWN);
+  } else {
+    m_ExtTemp       = getKeyValue(m_meteoVMCJson,"EXT/Btemperature/value");
+    m_ExtTempMax    = getKeyValue(m_meteoVMCJson,"EXT/Btemperature/maxValue");
+    m_ExtTempMin    = getKeyValue(m_meteoVMCJson,"EXT/Btemperature/minValue");
+    m_ExtTrendMeteo = getKeyValue(m_meteoVMCJson,"EXT/pression/forcast").toInt();
+    m_VMVvts        = getKeyValue(m_meteoVMCJson,"VMC/Vitesse");
+    m_VMCtemp       = getKeyValue(m_meteoVMCJson,"VMC/temperature/value");
   }
 }

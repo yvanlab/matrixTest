@@ -92,7 +92,12 @@ void processCmdRemoteDebug() {
       siInterface.setCfgDetected(true);
     } else if (lastCmd == "cfgoff") {
       siInterface.setCfgDetected(false);
+    } else if (lastCmd == "perif") {
+      pPeriferic.retrievePeriphericInfo();
     }
+
+
+
 }
 #endif
 
@@ -105,13 +110,15 @@ String getJson()
 
   String tt("{\"module\":{");
     tt += "\"nom\":\"" + String(MODULE_NAME) +"\"," ;
-    tt += "\"version\":\"" + String(VMC_VERSION) +"\"," ;
+    tt += "\"version\":\"" + String(MATRIX_VERSION) +"\"," ;
     tt += "\"uptime\":\"" + NTP.getUptimeString() +"\"," ;
+    tt += "\"status\":\"" + String(STATUS_PERIPHERIC_WORKING) +"\"," ;
     tt += "\"build_date\":\""+ String(__DATE__" " __TIME__)  +"\"},";
     tt += "\"datetime\":{" + wfManager.getHourManager()->toDTString(JSON_TEXT) + "},";
     tt += "\"setting\":{";
-    tt += "\"screenActivated\":\""+ String(matrix.isScreenActivated())  +"\"},";
-    tt += "\"periferic\":[" + pPeriferic.getcurrentJson() +  "," + pPeriferic.getMeteoVMCJson() + "]";
+    tt += "\"screenActivated\":\""+ String(matrix.isScreenActivated()) +"\"," ;
+    tt += smManager.toString(JSON_TEXT) + "},";
+    tt += "\"periferic\":[" /*+pPeriferic.getsaintJson() + ","*/+  pPeriferic.getcurrentJson() + "," + pPeriferic.getSnorerVMCJson() + "," + pPeriferic.getMeteoVMCJson() + "]";
 
     //  tt += "\"LOG\":[]";
     tt += "}";
@@ -166,7 +173,10 @@ void dataSummaryPage() {
 }
 
 
-
+void forcePerifericUpdate() {
+  pPeriferic.retrievePeriphericInfo();
+  wfManager.getServer()->send ( 200, "text/html", "Ok");
+}
 
 
 
@@ -175,7 +185,8 @@ void setData(){
   if (str.length()>0)
     strcpy(smManager.m_textToDisplay, str.c_str());
   smManager.writeData();
-  wfManager.getServer()->send ( 200, "text/html", "Message recorded");
+  siInterface.setPersonDetected(true);
+  wfManager.getServer()->send ( 200, "text/html", "Ok");
 }
 
 
@@ -217,6 +228,7 @@ void startWiFiserver() {
   wfManager.getServer()->on ( "/setting", displayData );
   wfManager.getServer()->on ( "/setData", setData );
   wfManager.getServer()->on ( "/status", dataSummaryJson );
+  wfManager.getServer()->on ( "/force", forcePerifericUpdate );
 
   Serial.println( "HTTP server started" );
   Serial.println(wfManager.toString(STD_TEXT));
@@ -238,7 +250,7 @@ void setup ( void ) {
 
 #ifdef MCPOC_TELNET
   Debug.begin(MODULE_NAME);
-  String helpCmd = "next\n\ron/off\n\rcfgon/cfgoff\n\r";
+  String helpCmd = "next\n\ron/off\n\rcfgon/cfgoff\n\rperif\n\r";
   Debug.setHelpProjectsCmds(helpCmd);
   Debug.setCallBackProjectCmds(&processCmdRemoteDebug);
 
@@ -271,12 +283,19 @@ void loop ( void ) {
     if (!WiFi.isConnected()) {
       restartESP();
     }
-  }*/
+  }
+  if (mtTimer.isCustomPeriod()) {
+    pPeriferic.retrievePeriphericInfo();
+  }
+  */
+
+
+
 
   if (mtTimer.is25MSPeriod()) {
     if (siInterface.isCfgDetected()) {
       mpPages.setPage(CFG_PAGE);
-      DEBUGLOG("cfg");
+      //DEBUGLOG("cfg");
     }else if (siInterface.isPagechangeDetected() ){
       DEBUGLOG("next");
       mpPages.nextPage();
@@ -291,11 +310,11 @@ void loop ( void ) {
   }
   if (matrix.isScreenActivated()) {
     mpPages.displayPage();
-    if (mtTimer.is1MNPeriod()){
+    if (mtTimer.is5MNPeriod()){
       pPeriferic.retrievePeriphericInfo();
     }
   } else {
-    if (mtTimer.is30MNPeriod()){
+    if (mtTimer.is1MNPeriod()){
       pPeriferic.retrievePeriphericInfo();
     }
   }

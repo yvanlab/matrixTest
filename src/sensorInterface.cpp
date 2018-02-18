@@ -62,7 +62,7 @@ boolean SensorInterface::isPersonDetected() {
   //DEBUGLOGF("%d : Analog Read %d\n",nbDetected,distance);
   if (distance>500) {
     nbDetected++;
-    if (nbDetected==20) {
+    if (nbDetected==2) {
       nbDetected = 0;
       personDetectedTime =   millis();
       return true;

@@ -13,13 +13,15 @@ SettingManager::SettingManager(unsigned char pinLed) : BaseSettingManager(pinLed
 }
 
 String SettingManager:: toString(boolean bJson = false){
-  //return "SSID[" + String(m_ssid) + "] PASS[" + m_password + "] privateKey[" + m_privateKey + "] publicKey[" + m_publicKey + "] Hum["+m_HUM_SEUIL+"]";
-  return BaseSettingManager::toString(bJson) + "Text["+m_textToDisplay+"]";
-}
+  if (bJson ==STD_TEXT)
+    return BaseSettingManager::toString(bJson) + "Text["+m_textToDisplay+"]";
+  else
+    return "\"text\":\""+String (m_textToDisplay) + "\"";
+  }
 unsigned char SettingManager::readData(){
   BaseSettingManager::readData();
   switchOn();
-  readEEPROM(m_textToDisplay);
+  readEEPROM(m_textToDisplay,200);
   switchOff();
 }
 unsigned char SettingManager::writeData(){
