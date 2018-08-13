@@ -1,5 +1,6 @@
 
 #include <Arduino.h>
+//#include <WiFiUdp.h>
 
 #include "WifiManagerV2.h"
 #include "SettingManager.h"
@@ -66,7 +67,8 @@
 
 
 LEDMatrix matrix(PIN_A, PIN_B, PIN_C, PIN_D, PIN_OE, PIN_R1, /*PIN_G1, PIN_B1,*/ PIN_STB, PIN_CLK);
-uint8_t displaybuf[WIDTH * HEIGHT]; // Display Buffer
+static __attribute__((aligned(4))) uint8_t displaybuf[WIDTH * HEIGHT];
+//uint8_t displaybuf[WIDTH * HEIGHT]; // Display Buffer
 
 SettingManager          smManager(pinLed);
 WifiManager             wfManager(pinLed,&smManager);
@@ -74,6 +76,7 @@ Periferic               pPeriferic(pinLed);
 SensorInterface         siInterface(pinLed, pin_SR04_TRG, pin_SR04_ECHO);//23200); // ST_HW_HC_SR04(TRIG, ECHO)
 thingSpeakManager       sfManager(pinLed);
 MatrixPages             mpPages(&pPeriferic,pinLed);
+//WiFiUDP                 Udp;
 
 #ifdef MCPOC_TELNET
 RemoteDebug             Debug;
@@ -182,8 +185,18 @@ void forcePerifericUpdate() {
 
 void setData(){
   String str = wfManager.getServer()->arg("texte");
-  if (str.length()>0)
+  if (str.length()>0) {
     strcpy(smManager.m_textToDisplay, str.c_str());
+    pPeriferic.sendToVoiceBox(str);
+    /*IPAddress ip;
+    ip.fromString(VOICE_IP_PROD);
+    DEBUGLOGF("send to Voice:%s\n",str.c_str());
+    Udp.beginPacket(ip, 4210);
+    //Udp.beginPacket(IPAddress(192,168,0,145), 4210);
+    Udp.write(str.c_str());
+    Udp.endPacket();*/
+    //Udp.send(smManager.m_textToDisplay, VOICE_IP_PROD, 4210);
+  }
   smManager.writeData();
   siInterface.setPersonDetected(true);
   wfManager.getServer()->send ( 200, "text/html", "Ok");
@@ -193,7 +206,7 @@ void setData(){
 void displayData() {
 	digitalWrite ( pinLed, LOW );
 
-  char temp[400];
+  //char temp[400];
 
   String message =  "<html>\
     <head>\
@@ -256,9 +269,9 @@ void setup ( void ) {
 
 #endif
 
-  mtTimer.begin(timerFrequence);
-  mtTimer.setCustomMS(10000);
-  pPeriferic.retrievePeriphericInfo();
+mtTimer.begin(timerFrequence);
+mtTimer.setCustomMS(10000);
+pPeriferic.retrievePeriphericInfo();
 
 }
 
@@ -266,9 +279,12 @@ boolean previousPresence = true;
 
 void loop ( void ) {
 
-	wfManager.handleClient();
-
+  wfManager.handleClient();
   //matrix.displayScreen();
+  if (mtTimer.is1SPeriod()) {
+    DEBUGLOGF("loop %d\n",matrix.isScreenActivated());
+  }
+
   /*if (mtTimer.is1SPeriod()) {
     matrix.drawImage(0,0,yingyung,0);
     matrix.drawImage(20,0,yingyung,PA_BLINK_MSEC);
@@ -290,18 +306,26 @@ void loop ( void ) {
   */
 
 
-
-
   if (mtTimer.is25MSPeriod()) {
+    DEBUGLOG("25ms");
+    siInterface.checkPersonDetected();
+    siInterface.checkPageChangeDetected();
     if (siInterface.isCfgDetected()) {
       mpPages.setPage(CFG_PAGE);
       //DEBUGLOG("cfg");
     }else if (siInterface.isPagechangeDetected() ){
-      DEBUGLOG("next");
+      DEBUGLOG("next pp");
       mpPages.nextPage();
-      DEBUGLOGF("next : %d\n",mpPages.page );
+      DEBUGLOGF("next pp : %d\n",mpPages.page );
     } else if (siInterface.isPersonDetected() ){
         matrix.switchScreenStatus(SWITCH_ON_SCREEN);
+        if (wfManager.getHourManager()->isNextHour()) {
+          String text;
+          text = "il est " + String(hour()) + " heure";// et " + String(minute()) + " minute." + FPSTR (weatherString[pPeriferic.getTrendMeteo()]);
+          //sprintf(text,)
+          pPeriferic.sendToVoiceBox(text);
+        }
+
     } else {
       //DEBUGLOG("nobody detected");
       matrix.switchScreenStatus(SWITCH_OFF_SCREEN);
@@ -310,9 +334,10 @@ void loop ( void ) {
   }
   if (matrix.isScreenActivated()) {
     mpPages.displayPage();
-    if (mtTimer.is5MNPeriod()){
+    matrix.displayScreen();
+    /*if (mtTimer.is5MNPeriod()){
       pPeriferic.retrievePeriphericInfo();
-    }
+    }*/
   } else {
     if (mtTimer.is1MNPeriod()){
       pPeriferic.retrievePeriphericInfo();
@@ -331,12 +356,14 @@ if (mtTimer.is1MNPeriod()){
   }
 }
 
-  if (mtTimer.is5MNPeriod()) {
-    if (!WiFi.isConnected()) {
-      ESP.restart();
-    }
-    mpPages.setPage(MESSAGE_PAGE);
+if (mtTimer.is5MNPeriod()) {
+  if (!WiFi.isConnected()) {
+    ESP.restart();
   }
+  mpPages.setPage(MESSAGE_PAGE);
+}
+
 
   mtTimer.clearPeriod();
+
 }

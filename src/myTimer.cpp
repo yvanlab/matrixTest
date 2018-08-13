@@ -18,7 +18,9 @@ MyTimer::MyTimer(unsigned char pinLed) : BaseManager(pinLed){
 /*String MyTimer::toString(boolean bJson = false){
   return "Period[" + String(period) + "]";
 }*/
-void  timerCallback(void *pArg) {
+void static timerCallback(void *pArg) {
+
+//os_intr_lock();
      mtTimer.periodCPT++;
 
      //DEBUGLOG(mtTimer.periodCPT);
@@ -30,7 +32,9 @@ void  timerCallback(void *pArg) {
      if ((mtTimer.periodCPT % MOD_5MN) == 0)     {mtTimer.period |= PERIOD_5MN  ;mtTimer.frequence ^= PERIOD_5MN;}
      if ((mtTimer.periodCPT % MOD_30MN) == 0)    {mtTimer.period |= PERIOD_30MN ;mtTimer.frequence ^= PERIOD_30MN;}
      if ((mtTimer.periodCPT % mtTimer.MOD_custom) == 0)  {mtTimer.period |= PERIOD_CUSTOM;mtTimer.frequence ^= PERIOD_CUSTOM;}
-     matrix.displayScreen();
+     //DEBUGLOGF("int %d\n",millis() );
+     //matrix.displayScreen();
+    //os_intr_unlock();
 } // End of timerCallback
 
 void MyTimer::begin(uint32_t freqMS){

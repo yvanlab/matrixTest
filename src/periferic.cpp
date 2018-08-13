@@ -4,6 +4,7 @@
 #include <esp8266httpclient.h>
 #include <WiFiClient.h>
 #include <ESP8266WiFi.h>
+#include <WiFiUdp.h>
 
 #if defined(ARDUINO) && ARDUINO >= 100
 #include "Arduino.h"
@@ -16,6 +17,17 @@ Periferic::Periferic(unsigned char pinLed) : BaseManager(pinLed){
 
 }
 
+int  Periferic::sendToVoiceBox(String text){
+  IPAddress ip;
+  WiFiUDP   Udp;
+  ip.fromString(VOICE_IP_PROD);
+  DEBUGLOGF("send to Voice:%s\n",text.c_str());
+  Udp.beginPacket(ip, 4210);
+  //Udp.beginPacket(IPAddress(192,168,0,145), 4210);
+  uint8_t res = Udp.write(text.c_str());
+  Udp.endPacket();
+  return res;
+}
 
 
 String Periferic::collectJson(String urlService) {
@@ -23,9 +35,10 @@ String Periferic::collectJson(String urlService) {
   HTTPClient http;  //Declare an object of class HTTPClient
   DEBUGLOG(urlService);  //Specify request destination
   http.begin(urlService);  //Specify request destination
+  DEBUGLOG("http.begin");
   String result;
   int httpCode = http.GET();                                                                  //Send the request
-
+  DEBUGLOGF("http.GET %d",httpCode);
   if (httpCode > 0) { //Check the returning code
     result = http.getString();   //Get the request response payload
   }
@@ -154,7 +167,7 @@ void Periferic::retrievePeriphericInfo() {
 
 
 
-  m_snorerJson = collectJson("http://"+String(SNORER_IP_PROD)+"/status");
+  m_snorerJson = "";//collectJson("http://"+String(SNORER_IP_PROD)+"/status");
   if (m_snorerJson.length() == 0) {
     m_snorerJson = buildPerifericOutput(SNORER_NAME, STATUS_PERIPHERIC_DOWN);
   }

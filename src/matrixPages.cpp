@@ -168,11 +168,9 @@ void MatrixPages::displayCfgPage(){
     matrix.drawChar(34,0,0xDB,font4_6, PC_SHADOW);
     matrix.drawChar(38,0,0xDB,font4_6, PC_DARK);
 
-    if (siInterface.isPersonDetected()) {
-      matrix.drawText(47,10,"ON",font4_6, PC_BRIGHT);
-    } else {
-      matrix.drawText(47,10,"Off",font4_6, PC_BRIGHT);
-    }
+
+    matrix.drawText(47,10,String(MATRIX_VERSION).c_str(),font4_6, PC_BRIGHT);
+
     /*matrix.drawChar(42,0,0xDB,font4_6, PC_ON_3);*/
 
     /*matrix.drawText(30,0,"COLOR1",font4_6, PC_BRIGHT);

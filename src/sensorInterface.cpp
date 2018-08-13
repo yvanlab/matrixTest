@@ -40,50 +40,83 @@ uint16_t SensorInterface::readSensor(uint32_t timeout){
   return detection;
 }
 
+
+
 boolean SensorInterface::isPagechangeDetected() {
-  if (bForcePgeChangeDetected) {
+  if (isPersonDetected() ) {
+    if ((pageChangeDetectedTime>0) && (millis() - pageChangeDetectedTime < MAX_DURATION_PAGE_CHANGE  ) ) {
+      return true;
+    }
+  }
+  pageChangeDetectedTime = 0;
+  return false;
+  /*if (bForcePgeChangeDetected) {
     bForcePgeChangeDetected = false;
     return true;
   }
   if (isPersonDetected()) {
     //setTimeout(TIMEOUT_DETECTION_CLOSE);
     uint16_t distance = readSensor(TIMEOUT_DETECTION_CLOSE);
+    DEBUGLOGF("dist page %d\n",distance);
     return  (distance>20 && distance<25);
   }
+  return false;*/
 }
 
 boolean SensorInterface::isPersonDetected() {
-  if ((personDetectedTime > 0 ) && ((millis() - personDetectedTime) < MAX_DURATION_ACTIVE) )
-    return true;
-  //setTimeout(TIMEOUT_DETECTION_FAR);
-  pinMode(A0,INPUT_PULLDOWN_16);
-  digitalWrite(A0,LOW);
-  uint16_t distance = analogRead(A0);//readSensor(TIMEOUT_DETECTION_FAR);
-  //DEBUGLOGF("%d : Analog Read %d\n",nbDetected,distance);
-  if (distance>500) {
-    nbDetected++;
-    if (nbDetected==2) {
-      nbDetected = 0;
-      personDetectedTime =   millis();
-      return true;
-    }
-  } else {
-    nbDetected = 0;
-  }
-  personDetectedTime = 0;
-  return false;
+  return personDetectedTime != 0;
 }
 
 
 boolean SensorInterface::isCfgDetected() {
   if (isPersonDetected() ) {
-    if ((cfgDetectedTime>0) && (millis() - cfgDetectedTime < MAX_DURATION_CFG  ) ) return true;
-    //setTimeout(TIMEOUT_DETECTION_CLOSE);
-    uint16_t distance = readSensor(TIMEOUT_DETECTION_CLOSE);
-    if (distance>2 && distance<5) {
-      cfgDetectedTime = millis();
+    if ((cfgDetectedTime>0) && (millis() - cfgDetectedTime < MAX_DURATION_CFG  ) ) {
       return true;
     }
   }
   return false;
+}
+
+
+
+void SensorInterface::checkPageChangeDetected() {
+  if (bForcePgeChangeDetected) {
+    bForcePgeChangeDetected = false;
+    pageChangeDetectedTime = millis();
+    return;
+  }
+  if (!isPersonDetected()) {
+    return;
+  }
+    //setTimeout(TIMEOUT_DETECTION_CLOSE);
+  uint16_t distance = readSensor(TIMEOUT_DETECTION_CLOSE);
+  DEBUGLOGF("dist page %d\n",distance);
+  if  (distance>20 && distance<25) {
+    pageChangeDetectedTime = millis();
+  } else if (distance>2 && distance<5) {
+    cfgDetectedTime = millis();
+  }
+}
+
+void SensorInterface::checkPersonDetected() {
+  if ((personDetectedTime > 0 ) && ((millis() - personDetectedTime) < MAX_DURATION_ACTIVE) )
+    return
+  //setTimeout(TIMEOUT_DETECTION_FAR);
+  pinMode(A0,INPUT_PULLDOWN_16);
+  digitalWrite(A0,LOW);
+  uint16_t distance = analogRead(A0);//readSensor(TIMEOUT_DETECTION_FAR);
+  DEBUGLOGF("%d : Analog Read %d\n",nbDetected,distance);
+  if (distance>500) {
+    nbDetected++;
+    if (nbDetected==2) {
+      nbDetected = 0;
+      personDetectedTime =   millis();
+      return ;
+    }
+  } else {
+    nbDetected = 0;
+  }
+  personDetectedTime = 0;
+  return ;
+
 }

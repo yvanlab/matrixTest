@@ -18,14 +18,18 @@
 
 #define MAX_DURATION_ACTIVE 30000//60000 //1mn
 #define MAX_DURATION_CFG 30000 //30s
+#define MAX_DURATION_PAGE_CHANGE 20 // 20ms
 #define TIMEOUT_DETECTION_FAR 58*30//58*nb cm
 #define TIMEOUT_DETECTION_CLOSE 58*30 //1mn
 
-class SensorInterface : public ST_HW_HC_SR04,  public BaseManager
+class SensorInterface :  public BaseManager,public ST_HW_HC_SR04
 {
   public:
     SensorInterface(uint8_t pinLed,uint8_t pin_SR04_TRG, uint8_t pin_SR04_ECHO);
     uint16_t readSensor(uint32_t timeout);
+
+    void checkPersonDetected();
+    void checkPageChangeDetected();
 
     boolean isPagechangeDetected();
     boolean isPersonDetected();
@@ -38,6 +42,7 @@ class SensorInterface : public ST_HW_HC_SR04,  public BaseManager
     String getClassName(){return "SensorInterface";}
     uint16_t detection = 0;
     uint32_t cfgDetectedTime = 0;
+    uint32_t pageChangeDetectedTime = 0;
   private:
     uint32_t personDetectedTime = 0;
 

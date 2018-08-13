@@ -88,7 +88,7 @@ void LEDMatrix::drawSquare(int16_t x, int16_t y,int16_t xRight,int16_t yLow, uin
 }
 
 void LEDMatrix::displayScreen() {
-  if (!isScreenActivated() ) return;
+  //if (!isScreenActivated() ) return;
   greyColor++;
   for (uint8_t row=0 ;row<height;row++)
     scan(row);
@@ -96,22 +96,21 @@ void LEDMatrix::displayScreen() {
 
 void LEDMatrix::scan(uint8_t row) {
     //static uint8_t row = 0;  // from 0 to 15
-
+    ESP.wdtFeed();
     uint8_t *ptr = displaybuf + row * width;
     uint8_t pixelColor;
-
+    //DEBUGLOGF("Row %d\n",row );
     for (uint8_t col = 0; col < width; col++) {
+        //DEBUGLOGF("  line %d\n",col );
         uint8_t pixel = *ptr;
         uint8_t bDisplay = false;
         pixelColor = pixel & MASK_PIXEL_COLOR;
-        if (pixelColor == PC_BRIGHT)
+       if (pixelColor == PC_BRIGHT)
           bDisplay = true;
         else if (pixelColor == PC_SHADOW)
           bDisplay = (greyColor%3)==0;
         else if (pixelColor == PC_DARK)
           bDisplay = (greyColor%7)==0;
-      /*  else if (pixel & PC_ON_3)
-          bDisplay = (greyColor%7)==0;*/
 
         if (bDisplay) {
           if (pixel & PA_BLINK_25MS)

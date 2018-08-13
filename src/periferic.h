@@ -52,6 +52,7 @@ class Periferic : public BaseManager
     String getCurrentValue(String key);
     String getSonorerValue(String key);
 
+    int sendToVoiceBox(String text);
 
     // current
     String m_InstantCurrent1;
@@ -60,7 +61,7 @@ class Periferic : public BaseManager
     String m_Temperarture;
     String m_InstantCurrent3;
     String m_KWH1;
-    
+
     // meteo
     String m_ExtTemp;
     String m_ExtTempMax;
