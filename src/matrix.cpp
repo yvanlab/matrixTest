@@ -8,6 +8,7 @@
 #include "MatrixPages.h"
 #include "periferic.h"
 #include "SensorInterface.h"
+#include "grovestreamsManager.h"
 
 #include "myTimer.h"
 
@@ -75,6 +76,7 @@ WifiManager             wfManager(pinLed,&smManager);
 Periferic               pPeriferic(pinLed);
 SensorInterface         siInterface(pinLed, pin_SR04_TRG, pin_SR04_ECHO);//23200); // ST_HW_HC_SR04(TRIG, ECHO)
 thingSpeakManager       sfManager(pinLed);
+grovestreamsManager     grovesMgt(pinLed);
 MatrixPages             mpPages(&pPeriferic,pinLed);
 //WiFiUDP                 Udp;
 
@@ -115,6 +117,11 @@ String getJson()
     tt += "\"nom\":\"" + String(MODULE_NAME) +"\"," ;
     tt += "\"version\":\"" + String(MATRIX_VERSION) +"\"," ;
     tt += "\"uptime\":\"" + NTP.getUptimeString() +"\"," ;
+    tt += "\"LOG\":["+wfManager.log(JSON_TEXT)  + "," +
+                      sfManager.log(JSON_TEXT) + "," +
+                      smManager.log(JSON_TEXT) + "," +
+                      grovesMgt.log(JSON_TEXT) + "," +
+                      wfManager.getHourManager()->log(JSON_TEXT)+"],";
     tt += "\"status\":\"" + String(STATUS_PERIPHERIC_WORKING) +"\"," ;
     tt += "\"build_date\":\""+ String(__DATE__" " __TIME__)  +"\"},";
     tt += "\"datetime\":{" + wfManager.getHourManager()->toDTString(JSON_TEXT) + "},";
@@ -276,13 +283,14 @@ pPeriferic.retrievePeriphericInfo();
 }
 
 boolean previousPresence = true;
+uint16_t nbDetectionperhour = 0;
 
 void loop ( void ) {
 
   wfManager.handleClient();
   //matrix.displayScreen();
   if (mtTimer.is1SPeriod()) {
-    DEBUGLOGF("loop %d\n",matrix.isScreenActivated());
+    //DEBUGLOGF("loop %d\n",matrix.isScreenActivated());
   }
 
   /*if (mtTimer.is1SPeriod()) {
@@ -307,7 +315,7 @@ void loop ( void ) {
 
 
   if (mtTimer.is25MSPeriod()) {
-    DEBUGLOG("25ms");
+    //DEBUGLOG("25ms");
     siInterface.checkPersonDetected();
     siInterface.checkPageChangeDetected();
     if (siInterface.isCfgDetected()) {
@@ -354,6 +362,8 @@ if (mtTimer.is1MNPeriod()){
     DEBUGLOGF("sendIoT : %d\n",res );
     previousPresence = nowDetection;
   }
+
+  if (nowDetection) nbDetectionperhour++;
 }
 
 if (mtTimer.is5MNPeriod()) {
@@ -361,6 +371,15 @@ if (mtTimer.is5MNPeriod()) {
     ESP.restart();
   }
   mpPages.setPage(MESSAGE_PAGE);
+}
+
+if (mtTimer.is1HPeriod()) {
+  if (WiFi.isConnected()) {
+    grovesMgt.addVariable(PRESENCE_SEJOUR_BAR   , String(nbDetectionperhour));
+    grovesMgt.sendIoT(PRESENCE_ID);
+    nbDetectionperhour = 0;
+  }
+
 }
 
 

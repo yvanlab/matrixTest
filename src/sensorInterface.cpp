@@ -105,7 +105,7 @@ void SensorInterface::checkPersonDetected() {
   pinMode(A0,INPUT_PULLDOWN_16);
   digitalWrite(A0,LOW);
   uint16_t distance = analogRead(A0);//readSensor(TIMEOUT_DETECTION_FAR);
-  DEBUGLOGF("%d : Analog Read %d\n",nbDetected,distance);
+  //DEBUGLOGF("%d : Analog Read %d\n",nbDetected,distance);
   if (distance>500) {
     nbDetected++;
     if (nbDetected==2) {
