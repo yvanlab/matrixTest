@@ -5,13 +5,13 @@
 
 #include "Arduino.h"
 
-#include "BaseManager.h"
+#include "baseManager.h"
 #include "LEDMatrix.h"
 #include <HourManager.h>
 #include <ST_HW_HC_SR04.h>
 //#include "SparkfunManager.h"
-#include "WifiManagerV2.h"
-#include "SettingManager.h"
+#include "wifiManagerV2.h"
+#include "settingManager.h"
 //#include "ioManager.h"
 #include "periferic.h"
 

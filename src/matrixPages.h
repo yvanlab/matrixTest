@@ -15,8 +15,8 @@
 
 
 
-#include "BaseManager.h"
-#include "Periferic.h"
+#include "baseManager.h"
+#include "periferic.h"
 
 #define FROM_CENTER 1
 #define FROM_LEFT   2

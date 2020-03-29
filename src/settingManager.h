@@ -26,8 +26,8 @@ class SettingManager : public BaseSettingManager
     char m_textToDisplay[200];
     SettingManager(unsigned char pinLed);
     String toString(boolean bJson);
-    unsigned char readData();
-    unsigned char writeData();
+    virtual unsigned char readData();
+    virtual unsigned char writeData();
     /*unsigned char clearData();*/
     String getClassName(){return "SettingManager";}
   private:

@@ -1,6 +1,6 @@
 
 
-#include "SettingManager.h"
+#include "settingManager.h"
 
 #if defined(ARDUINO) && ARDUINO >= 100
 #include "Arduino.h"

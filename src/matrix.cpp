@@ -2,12 +2,12 @@
 #include <Arduino.h>
 //#include <WiFiUdp.h>
 
-#include "WifiManagerV2.h"
-#include "SettingManager.h"
+#include "wifiManagerV2.h"
+#include "settingManager.h"
 #include "thingSpeakManager.h"
-#include "MatrixPages.h"
+#include "matrixPages.h"
 #include "periferic.h"
-#include "SensorInterface.h"
+#include "sensorInterface.h"
 #include "grovestreamsManager.h"
 
 #include "myTimer.h"

@@ -13,7 +13,7 @@
 
 #endif
 
-#include "BaseManager.h"
+#include "baseManager.h"
 
 class Periferic : public BaseManager
 {
