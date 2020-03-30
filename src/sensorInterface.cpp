@@ -11,7 +11,7 @@
 
 #endif
 #include <ST_HW_HC_SR04.h>
-#include "BaseManager.h"
+#include "baseManager.h"
 #include "sensorInterface.h"
 //ST_HW_HC_SR04 ultrasonicSensor(pin_SR04_TRG, pin_SR04_ECHO,5000);//23200); // ST_HW_HC_SR04(TRIG, ECHO)
 

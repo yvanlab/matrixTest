@@ -13,7 +13,7 @@
 
 #endif
 
-#include "BaseManager.h"
+#include "baseManager.h"
 
 extern "C" {
 #include "user_interface.h"
