@@ -14,6 +14,7 @@
 #endif
 
 #include "baseManager.h"
+#include <ESP8266HTTPClient.h>
 
 class Periferic : public BaseManager
 {
@@ -82,7 +83,8 @@ class Periferic : public BaseManager
     String getBlock(String jSon, String key);
     String getValue(String jSon, String key);
     String getKeyValue(String jSon, String key);
-
+    
+    
 
 };
 

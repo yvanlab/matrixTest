@@ -16,7 +16,6 @@
 #include "RemoteDebug.h"
 #endif
 
-
 #include <WiFiClient.h>
 #include "LEDMatrix.h"
 
@@ -31,108 +30,112 @@
 #define MODULE_NAME MATRIX_DISPLAY_NAME
 #define MODULE_MDNS MATRIX_DISPLAY_MDNS
 #define MODULE_MDNS_AP MATRIX_DISPLAY_MDNS_AP
-#define MODULE_IP   MATRIX_DISPLAY_IP
+#define MODULE_IP MATRIX_DISPLAY_IP
 
-#define  pinLed           D4 //D4
-#define  pin_DETECTION    D7
-#define  pin_SR04_TRG     D7
-#define  pin_SR04_ECHO    D6
+#define pinLed D4 //D4
+#define pin_DETECTION D7
+#define pin_SR04_TRG D7
+#define pin_SR04_ECHO D6
 
 //#ifdef NODEMCU // for nodeMCU
-  #include <pins_arduino.h>
-  #define PIN_A D0
-  #define PIN_B D1
-  #define PIN_C D2
-  #define PIN_D D3
-  #define PIN_OE D4
-  #define PIN_R1 D5
-  #define PIN_G1 D6
-  #define PIN_B1 D7
-  #define PIN_STB D8
-  #define PIN_CLK D9
+#include <pins_arduino.h>
+#define PIN_A D0
+#define PIN_B D1
+#define PIN_C D2
+#define PIN_D D3
+#define PIN_OE D4
+#define PIN_R1 D5
+#define PIN_G1 D6
+#define PIN_B1 D7
+#define PIN_STB D8
+#define PIN_CLK D9
 //#endif
-#define WIDTH   128
-#define HEIGHT  16
-
+#define WIDTH 128
+#define HEIGHT 16
 
 #define PRESENCE_LABEL 1 //"current"
-#define KWH_LABEL     2 //"KWH"
-#define HUM_LABEL     3 //"HUM"
-#define TEMP_LABEL    4 //"TEMP"
-
-
-
+#define KWH_LABEL 2      //"KWH"
+#define HUM_LABEL 3      //"HUM"
+#define TEMP_LABEL 4     //"TEMP"
 
 //#endif
-
-
 
 LEDMatrix matrix(PIN_A, PIN_B, PIN_C, PIN_D, PIN_OE, PIN_R1, /*PIN_G1, PIN_B1,*/ PIN_STB, PIN_CLK);
 static __attribute__((aligned(4))) uint8_t displaybuf[WIDTH * HEIGHT];
 //uint8_t displaybuf[WIDTH * HEIGHT]; // Display Buffer
 
-SettingManager          smManager(pinLed);
-WifiManager             wfManager(pinLed,&smManager);
-Periferic               pPeriferic(pinLed);
-SensorInterface         siInterface(pinLed, pin_SR04_TRG, pin_SR04_ECHO);//23200); // ST_HW_HC_SR04(TRIG, ECHO)
-thingSpeakManager       sfManager(pinLed);
-grovestreamsManager     grovesMgt(pinLed);
-MatrixPages             mpPages(&pPeriferic,pinLed);
+SettingManager smManager(pinLed);
+WifiManager wfManager(pinLed, &smManager);
+Periferic pPeriferic(pinLed);
+SensorInterface siInterface(pinLed, pin_SR04_TRG, pin_SR04_ECHO); //23200); // ST_HW_HC_SR04(TRIG, ECHO)
+thingSpeakManager sfManager(pinLed);
+grovestreamsManager grovesMgt(pinLed);
+MatrixPages mpPages(&pPeriferic, pinLed);
 //WiFiUDP                 Udp;
 
 #ifdef MCPOC_TELNET
-RemoteDebug             Debug;
+RemoteDebug Debug;
 #endif
 
 #ifdef MCPOC_TELNET // Not in PRODUCTION
-void processCmdRemoteDebug() {
-    String lastCmd = Debug.getLastCommand();
-    if (lastCmd == "next") {
-      siInterface.setPagechangeDetected();
-    } else if (lastCmd == "on") {
-      siInterface.setPersonDetected(true);
-    } else if (lastCmd == "off") {
-      siInterface.setPersonDetected(false);
-    } else if (lastCmd == "cfgon") {
-      siInterface.setCfgDetected(true);
-    } else if (lastCmd == "cfgoff") {
-      siInterface.setCfgDetected(false);
-    } else if (lastCmd == "perif") {
-      pPeriferic.retrievePeriphericInfo();
-    }
-
-
-
+void processCmdRemoteDebug()
+{
+  String lastCmd = Debug.getLastCommand();
+  if (lastCmd == "next")
+  {
+    siInterface.setPagechangeDetected();
+  }
+  else if (lastCmd == "on")
+  {
+    siInterface.setPersonDetected(true);
+  }
+  else if (lastCmd == "off")
+  {
+    siInterface.setPersonDetected(false);
+  }
+  else if (lastCmd == "cfgon")
+  {
+    siInterface.setCfgDetected(true);
+  }
+  else if (lastCmd == "cfgoff")
+  {
+    siInterface.setCfgDetected(false);
+  }
+  else if (lastCmd == "perif")
+  {
+    pPeriferic.retrievePeriphericInfo();
+  }
 }
 #endif
 
-void timerrestartESP(void *pArg) {
-    ESP.restart();
+void timerrestartESP(void *pArg)
+{
+  ESP.restart();
 }
 
 String getJson()
 {
 
   String tt("{\"module\":{");
-    tt += "\"nom\":\"" + String(MODULE_NAME) +"\"," ;
-    tt += "\"version\":\"" + String(MATRIX_VERSION) +"\"," ;
-    tt += "\"uptime\":\"" + NTP.getUptimeString() +"\"," ;
-    tt += "\"LOG\":["+wfManager.log(JSON_TEXT)  + "," +
-                      sfManager.log(JSON_TEXT) + "," +
-                      smManager.log(JSON_TEXT) + "," +
-                      grovesMgt.log(JSON_TEXT) + "," +
-                      wfManager.getHourManager()->log(JSON_TEXT)+"],";
-    tt += "\"status\":\"" + String(STATUS_PERIPHERIC_WORKING) +"\"," ;
-    tt += "\"build_date\":\""+ String(__DATE__" " __TIME__)  +"\"},";
-    tt += "\"datetime\":{" + wfManager.getHourManager()->toDTString(JSON_TEXT) + "},";
-    tt += "\"setting\":{";
-    tt += "\"screenActivated\":\""+ String(matrix.isScreenActivated()) +"\"," ;
-    tt += smManager.toString(JSON_TEXT) + "},";
-    tt += "\"periferic\":[" /*+pPeriferic.getsaintJson() + ","*/+  pPeriferic.getcurrentJson() + "," + pPeriferic.getSnorerVMCJson() + "," + pPeriferic.getMeteoVMCJson() + "]";
+  tt += "\"nom\":\"" + String(MODULE_NAME) + "\",";
+  tt += "\"version\":\"" + String(MATRIX_VERSION) + "\",";
+  tt += "\"uptime\":\"" + NTP.getUptimeString() + "\",";
+  tt += "\"LOG\":[" + wfManager.log(JSON_TEXT) + "," +
+        sfManager.log(JSON_TEXT) + "," +
+        smManager.log(JSON_TEXT) + "," +
+        grovesMgt.log(JSON_TEXT) + "," +
+        wfManager.getHourManager()->log(JSON_TEXT) + "],";
+  tt += "\"status\":\"" + String(STATUS_PERIPHERIC_WORKING) + "\",";
+  tt += "\"build_date\":\"" + String(__DATE__ " " __TIME__) + "\"},";
+  tt += "\"datetime\":{" + wfManager.getHourManager()->toDTString(JSON_TEXT) + "},";
+  tt += "\"setting\":{";
+  tt += "\"screenActivated\":\"" + String(matrix.isScreenActivated()) + "\",";
+  tt += smManager.toString(JSON_TEXT) + "},";
+  tt += "\"periferic\":[" /*+pPeriferic.getsaintJson() + ","*/ + pPeriferic.getcurrentJson() + "," + pPeriferic.getSnorerVMCJson() + "," + pPeriferic.getMeteoVMCJson() + "]";
 
-    //  tt += "\"LOG\":[]";
-    tt += "}";
-    return tt;
+  //  tt += "\"LOG\":[]";
+  tt += "}";
+  return tt;
 }
 
 /*
@@ -169,32 +172,32 @@ String getJson()
 
 */
 
-void dataSummaryJson() {
-	digitalWrite ( pinLed, LOW );
-  wfManager.getServer()->send ( 200, "text/json", getJson() );
-  digitalWrite ( pinLed, HIGH );
-
+void dataSummaryJson()
+{
+  digitalWrite(pinLed, LOW);
+  wfManager.getServer()->send(200, "text/json", getJson());
+  digitalWrite(pinLed, HIGH);
 }
-void dataSummaryPage() {
-	digitalWrite ( pinLed, LOW );
-  wfManager.getServer()->send ( 200, "text/json", getJson() );
-  digitalWrite ( pinLed, HIGH );
-
+void dataSummaryPage()
+{
+  digitalWrite(pinLed, LOW);
+  wfManager.getServer()->send(200, "text/json", getJson());
+  digitalWrite(pinLed, HIGH);
 }
 
-
-void forcePerifericUpdate() {
+void forcePerifericUpdate()
+{
   pPeriferic.retrievePeriphericInfo();
-  wfManager.getServer()->send ( 200, "text/html", "Ok");
+  wfManager.getServer()->send(200, "text/html", "Ok");
 }
 
-
-
-void setData(){
+void setData()
+{
   String str = wfManager.getServer()->arg("texte");
-  if (str.length()>0) {
+  if (str.length() > 0)
+  {
     strcpy(smManager.m_textToDisplay, str.c_str());
-    pPeriferic.sendToVoiceBox(str);
+    //pPeriferic.sendToVoiceBox(str);
     /*IPAddress ip;
     ip.fromString(VOICE_IP_PROD);
     DEBUGLOGF("send to Voice:%s\n",str.c_str());
@@ -206,16 +209,16 @@ void setData(){
   }
   smManager.writeData();
   siInterface.setPersonDetected(true);
-  wfManager.getServer()->send ( 200, "text/html", "Ok");
+  wfManager.getServer()->send(200, "text/html", "Ok");
 }
 
-
-void displayData() {
-	digitalWrite ( pinLed, LOW );
+void displayData()
+{
+  digitalWrite(pinLed, LOW);
 
   //char temp[400];
 
-  String message =  "<html>\
+  String message = "<html>\
     <head>\
       <title>message page</title>\
       <style>\
@@ -224,49 +227,48 @@ void displayData() {
     </head>\
     <body>";
   message += "<p>";
-  message +="<ul>";
+  message += "<ul>";
   message += "</ul>";
   message += "<form method='get' action='setData'>";
-  message += "<label>Text a afficher:</label><input name='texte' length=300 value=\""+String(smManager.m_textToDisplay) +"\"><br>";
+  message += "<label>Text a afficher:</label><input name='texte' length=300 value=\"" + String(smManager.m_textToDisplay) + "\"><br>";
   message += "<input type='submit'></form>";
   message += "</body></html>";
 
-  wfManager.getServer()->send ( 200, "text/html", message );
+  wfManager.getServer()->send(200, "text/html", message);
 
-  digitalWrite ( pinLed, HIGH );
-
+  digitalWrite(pinLed, HIGH);
 }
 
-void startWiFiserver() {
-  if (wfManager.begin(IPAddress(MODULE_IP),MODULE_NAME, MODULE_MDNS, MODULE_MDNS_AP)==WL_CONNECTED) {
-    wfManager.getServer()->on ( "/", dataSummaryPage );
-    wfManager.getServer()->onNotFound ( dataSummaryPage );
+void startWiFiserver()
+{
+  if (wfManager.begin(IPAddress(MODULE_IP), MODULE_NAME, MODULE_MDNS, MODULE_MDNS_AP) == WL_CONNECTED)
+  {
+    wfManager.getServer()->on("/", dataSummaryPage);
+    wfManager.getServer()->onNotFound(dataSummaryPage);
   } /*else {
     DEBUGLOG("Not connected");
   }*/
 
-  wfManager.getServer()->on ( "/setting", displayData );
-  wfManager.getServer()->on ( "/setData", setData );
-  wfManager.getServer()->on ( "/status", dataSummaryJson );
-  wfManager.getServer()->on ( "/force", forcePerifericUpdate );
+  wfManager.getServer()->on("/setting", displayData);
+  wfManager.getServer()->on("/setData", setData);
+  wfManager.getServer()->on("/status", dataSummaryJson);
+  wfManager.getServer()->on("/force", forcePerifericUpdate);
 
-  Serial.println( "HTTP server started" );
+  Serial.println("HTTP server started");
   Serial.println(wfManager.toString(STD_TEXT));
 }
 
-
-
-void setup ( void ) {
+void setup(void)
+{
   // Iniialise input
-  Serial.begin ( 115200 );
+  Serial.begin(115200);
 
   //pinMode(pin_DETECTION,INPUT);
   smManager.readData();
   matrix.begin(displaybuf, WIDTH, HEIGHT);
-  DEBUGLOG("");DEBUGLOG(smManager.toString(STD_TEXT));
+  DEBUGLOG("");
+  DEBUGLOG(smManager.toString(STD_TEXT));
   startWiFiserver();
-
-
 
 #ifdef MCPOC_TELNET
   Debug.begin(MODULE_NAME);
@@ -276,20 +278,21 @@ void setup ( void ) {
 
 #endif
 
-mtTimer.begin(timerFrequence);
-mtTimer.setCustomMS(10000);
-pPeriferic.retrievePeriphericInfo();
-
+  mtTimer.begin(timerFrequence);
+  mtTimer.setCustomMS(10000);
+  pPeriferic.retrievePeriphericInfo();
 }
 
 boolean previousPresence = true;
 uint16_t nbDetectionperhour = 0;
 
-void loop ( void ) {
+void loop(void)
+{
 
   wfManager.handleClient();
   //matrix.displayScreen();
-  if (mtTimer.is1SPeriod()) {
+  if (mtTimer.is1SPeriod())
+  {
     //DEBUGLOGF("loop %d\n",matrix.isScreenActivated());
   }
 
@@ -313,76 +316,90 @@ void loop ( void ) {
   }
   */
 
-
-  if (mtTimer.is25MSPeriod()) {
+  if (mtTimer.is25MSPeriod())
+  {
     //DEBUGLOG("25ms");
     siInterface.checkPersonDetected();
     siInterface.checkPageChangeDetected();
-    if (siInterface.isCfgDetected()) {
+    if (siInterface.isCfgDetected())
+    {
       mpPages.setPage(CFG_PAGE);
       //DEBUGLOG("cfg");
-    }else if (siInterface.isPagechangeDetected() ){
+    }
+    else if (siInterface.isPagechangeDetected())
+    {
       DEBUGLOG("next pp");
       mpPages.nextPage();
-      DEBUGLOGF("next pp : %d\n",mpPages.page );
-    } else if (siInterface.isPersonDetected() ){
-        matrix.switchScreenStatus(SWITCH_ON_SCREEN);
-        if (wfManager.getHourManager()->isNextHour()) {
+      DEBUGLOGF("next pp : %d\n", mpPages.page);
+    }
+    else if (siInterface.isPersonDetected())
+    {
+      matrix.switchScreenStatus(SWITCH_ON_SCREEN);
+      /*  if (wfManager.getHourManager()->isNextHour()) {
           String text;
           text = "il est " + String(hour()) + " heure";// et " + String(minute()) + " minute." + FPSTR (weatherString[pPeriferic.getTrendMeteo()]);
           //sprintf(text,)
           pPeriferic.sendToVoiceBox(text);
-        }
-
-    } else {
+        }*/
+    }
+    else
+    {
       //DEBUGLOG("nobody detected");
       matrix.switchScreenStatus(SWITCH_OFF_SCREEN);
       mpPages.setPage(MESSAGE_PAGE);
     }
   }
-  if (matrix.isScreenActivated()) {
+  if (matrix.isScreenActivated())
+  {
     mpPages.displayPage();
     matrix.displayScreen();
     /*if (mtTimer.is5MNPeriod()){
       pPeriferic.retrievePeriphericInfo();
     }*/
-  } else {
-    if (mtTimer.is1MNPeriod()){
+  }
+  else
+  {
+    if (mtTimer.is5MNPeriod())
+    {
       pPeriferic.retrievePeriphericInfo();
     }
   }
 
-if (mtTimer.is1MNPeriod()){
-  boolean nowDetection = siInterface.isPersonDetected();
+  if (mtTimer.is1MNPeriod())
+  {
+    boolean nowDetection = siInterface.isPersonDetected();
 
-  if (((!previousPresence && nowDetection) || (previousPresence && !nowDetection)) || mtTimer.is30MNPeriod()  ) {
-    sfManager.addVariable(PRESENCE_LABEL, String (nowDetection));
-    DEBUGLOG(sfManager.toString(STD_TEXT));
-    int res = sfManager.sendIoT( smManager.m_privateKey, smManager.m_publicKey);
-    DEBUGLOGF("sendIoT : %d\n",res );
-    previousPresence = nowDetection;
+    if (((!previousPresence && nowDetection) || (previousPresence && !nowDetection)) || mtTimer.is30MNPeriod())
+    {
+      sfManager.addVariable(PRESENCE_LABEL, String(nowDetection));
+      DEBUGLOG(sfManager.toString(STD_TEXT));
+      int res = sfManager.sendIoT(smManager.m_privateKey, smManager.m_publicKey);
+      DEBUGLOGF("sendIoT : %d\n", res);
+      previousPresence = nowDetection;
+    }
+
+    if (nowDetection)
+      nbDetectionperhour++;
   }
 
-  if (nowDetection) nbDetectionperhour++;
-}
-
-if (mtTimer.is5MNPeriod()) {
-  if (!WiFi.isConnected()) {
-    ESP.restart();
-  }
-  mpPages.setPage(MESSAGE_PAGE);
-}
-
-if (mtTimer.is1HPeriod()) {
-  if (WiFi.isConnected()) {
-    grovesMgt.addVariable(PRESENCE_SEJOUR_BAR   , String(nbDetectionperhour));
-    grovesMgt.sendIoT(PRESENCE_ID);
-    nbDetectionperhour = 0;
+  if (mtTimer.is1HPeriod())
+  {
+    if (WiFi.isConnected())
+    {
+      grovesMgt.addVariable(PRESENCE_SEJOUR_BAR, String(nbDetectionperhour));
+      grovesMgt.sendIoT(PRESENCE_ID);
+      nbDetectionperhour = 0;
+    }
   }
 
-}
-
+  if (mtTimer.is5MNPeriod())
+  {
+    if (!WiFi.isConnected() || wfManager.getHourManager()->isNextDay())
+    {
+      ESP.restart();
+    }
+    mpPages.setPage(MESSAGE_PAGE);
+  }
 
   mtTimer.clearPeriod();
-
 }

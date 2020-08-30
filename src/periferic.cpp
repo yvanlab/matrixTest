@@ -1,7 +1,7 @@
 
 
 #include "periferic.h"
-#include <ESP8266HTTPClient.h>
+
 #include <WiFiClient.h>
 #include <ESP8266WiFi.h>
 #include <WiFiUdp.h>
@@ -32,17 +32,28 @@ int  Periferic::sendToVoiceBox(String text){
 
 String Periferic::collectJson(String urlService) {
   if (!WiFi.isConnected()) return "";
-  HTTPClient http;  //Declare an object of class HTTPClient
+   //Declare an object of class HTTPClient
+  HTTPClient http;
+  WiFiClient client; 
   DEBUGLOG(urlService);  //Specify request destination
-  http.begin(urlService);  //Specify request destination
+  http.setTimeout(10000);
+  http.begin(client, urlService);  //Specify request destination
   DEBUGLOG("http.begin");
   String result;
   int httpCode = http.GET();                                                                  //Send the request
-  DEBUGLOGF("http.GET %d",httpCode);
+  DEBUGLOGF("http.GET %d\n",httpCode);
+
+  DEBUGLOGF("http.Free Heap1 %d\n",ESP.getFreeHeap());
   if (httpCode > 0) { //Check the returning code
-    result = http.getString();   //Get the request response payload
+    result = String(http.getString());   //Get the request response payload
+  } else {
+      DEBUGLOGF("http.GET %d %s \n",httpCode,http.errorToString(httpCode).c_str());
+
   }
+  DEBUGLOGF("http.Free Heap2 %d\n",ESP.getFreeHeap());
+  //delay(1000);
   http.end();   //Close connection
+  DEBUGLOGF("http.Free Heap3 %d\n",ESP.getFreeHeap());
   //DEBUGLOG(httpCode);DEBUGLOG(result);
   return result;
 }
@@ -70,7 +81,7 @@ String Periferic::collectJson(String urlService) {
 }
 */
 String Periferic::getValue(String jSon, String key) {
-  DEBUGLOG("Json:"+jSon + "  key:"+key);
+  //DEBUGLOG("Json:"+jSon + "  key:"+key);
   int16_t fromIndex = jSon.indexOf(key);
   //DEBUGLOGF("First index %d",fromIndex);
   if (fromIndex < 0) return "";
@@ -84,13 +95,13 @@ String Periferic::getValue(String jSon, String key) {
   lastIndex = sTmp.lastIndexOf("\"");
   fromIndex = sTmp.indexOf("\"",key.length()+1);
   sTmp = sTmp.substring(fromIndex+1,lastIndex );
-  DEBUGLOG(key+":"+sTmp + "  value:"+sTmp);
+  //DEBUGLOG(key+":"+sTmp + "  value:"+sTmp);
   return sTmp;
 }
 
 String Periferic::getBlock(String jSon, String key) {
   int16_t fromIndex = jSon.indexOf(key);
-  DEBUGLOGF("First index %d",fromIndex);
+  //DEBUGLOGF("First index %d",fromIndex);
   if (fromIndex < 0) return "";
   int16_t firstparenthesis = jSon.indexOf('{', fromIndex);
   uint8_t nbrParenthese=0;
@@ -102,7 +113,7 @@ String Periferic::getBlock(String jSon, String key) {
         nbrParenthese--;
       else {
         sTmp = jSon.substring(firstparenthesis, i+1);
-        DEBUGLOG(key+":"+sTmp);
+        //DEBUGLOG(key+":"+sTmp);
         return sTmp;
       }
     }
@@ -123,7 +134,7 @@ String Periferic::getKeyValue(String jsonMessage, String key) {
     return getValue(jsonMessage, key);
   String blockKey = key.substring(0, i);
   String nextKey = key.substring(i+1);
-  DEBUGLOG("blockKey : "+blockKey+"   nextKey:" + nextKey);
+  //DEBUGLOG("blockKey : "+blockKey+"   nextKey:" + nextKey);
   String block = getBlock(jsonMessage, blockKey);
   if (block != "")
     return getKeyValue(block, nextKey);
@@ -172,7 +183,24 @@ void Periferic::retrievePeriphericInfo() {
     m_snorerJson = buildPerifericOutput(SNORER_NAME, STATUS_PERIPHERIC_DOWN);
   }
 
+m_meteoVMCJson = collectJson("http://"+String(VMC_METEO_IP_PROD)+"/status");
+  //status_meteoVmc = STATUS_PERIPHERIC_WORKING;
+  if (m_meteoVMCJson.length() == 0) {
+    //status_meteoVmc = STATUS_PERIPHERIC_DOWN;
+    m_meteoVMCJson = buildPerifericOutput(VMC_METEO_NAME, STATUS_PERIPHERIC_DOWN);
+  } else {
+    m_ExtTemp       = getKeyValue(m_meteoVMCJson,"EXT/Btemperature/value");
+    m_ExtTempMax    = getKeyValue(m_meteoVMCJson,"EXT/Btemperature/maxValue");
+    m_ExtTempMin    = getKeyValue(m_meteoVMCJson,"EXT/Btemperature/minValue");
+    m_ExtTrendMeteo = getKeyValue(m_meteoVMCJson,"EXT/pression/forcast").toInt();
+    m_VMVvts        = getKeyValue(m_meteoVMCJson,"VMC/Vitesse");
+    m_VMCtemp       = getKeyValue(m_meteoVMCJson,"VMC/temperature/value");
+  }
+
   m_currentJson = collectJson("http://"+String(CURRENT_IP_PROD)+"/status");
+  //m_currentJson = collectJson("http://192.168.1.140/status");
+  
+  //DEBUGLOG("Json:"+m_currentJson);
   //status_current = STATUS_PERIPHERIC_WORKING;
   if (m_currentJson.length() == 0) {
     //m_currentJson = "{\"current-status\":\"failed\"}";
@@ -190,17 +218,5 @@ void Periferic::retrievePeriphericInfo() {
     m_KWH1 = "";
   }
 
-  m_meteoVMCJson = collectJson("http://"+String(VMC_METEO_IP_PROD)+"/status");
-  //status_meteoVmc = STATUS_PERIPHERIC_WORKING;
-  if (m_meteoVMCJson.length() == 0) {
-    //status_meteoVmc = STATUS_PERIPHERIC_DOWN;
-    m_meteoVMCJson = buildPerifericOutput(VMC_METEO_NAME, STATUS_PERIPHERIC_DOWN);
-  } else {
-    m_ExtTemp       = getKeyValue(m_meteoVMCJson,"EXT/Btemperature/value");
-    m_ExtTempMax    = getKeyValue(m_meteoVMCJson,"EXT/Btemperature/maxValue");
-    m_ExtTempMin    = getKeyValue(m_meteoVMCJson,"EXT/Btemperature/minValue");
-    m_ExtTrendMeteo = getKeyValue(m_meteoVMCJson,"EXT/pression/forcast").toInt();
-    m_VMVvts        = getKeyValue(m_meteoVMCJson,"VMC/Vitesse");
-    m_VMCtemp       = getKeyValue(m_meteoVMCJson,"VMC/temperature/value");
-  }
+  
 }
